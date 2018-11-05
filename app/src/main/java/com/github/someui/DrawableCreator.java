@@ -7,6 +7,9 @@ import android.util.DisplayMetrics;
 
 public class DrawableCreator {
 
+    private DrawableCreator() {
+    }
+
     public static Builder builder() {
         return new Builder();
     }
