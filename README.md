@@ -69,7 +69,8 @@ It supports the following attributes:
 Response json in example from server-side
 ```
 {
-	"richTextList": [{
+	"richTextList": [
+    	{
 			"text": "123",
 			"textColor": "#FF6633",
 			"textSize": "10",
