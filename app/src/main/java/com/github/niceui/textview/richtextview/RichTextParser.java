@@ -98,7 +98,7 @@ public class RichTextParser {
     }
 
     private CharSequence createText(String json, Object richObject, int verticalAlignment) {
-        int textSize = px2dip(richTextView.getTextSize());
+        float textSize = richTextView.getTextSize();
 
         if (richObject instanceof JSONObject) {
             return parseSpannable((JSONObject) richObject, textSize, 0, verticalAlignment);
@@ -121,24 +121,14 @@ public class RichTextParser {
         }
     }
 
-    private int px2dip(float pxValue) {
-        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
-        if (displayMetrics != null) {
-            final float scale = displayMetrics.density;
-            return (int) (pxValue / scale + 0.5f);
-        } else {
-            return (int) (pxValue / 3 + 0.5f) /* 使用主流手机的 density */;
-        }
-    }
-
-    private CharSequence parseSpannable(JSONObject announceJson, int textSize, int maxHeight, int verticalAlignment) {
+    private CharSequence parseSpannable(JSONObject announceJson, float textSize, int maxHeight, int verticalAlignment) {
         String text = announceJson.optString(RichTextKey.TEXT);
         SpannableStringBuilder spanText = new SpannableStringBuilder(!TextUtils.isEmpty(text) ? text : "");
 
         //间距实现使用添加全角空格方式
         int letterSpace = announceJson.optInt(RichTextKey.KERNING);
         if (letterSpace != 0) {
-            int textViewSize = textSize != 0 ? textSize : 14;
+            float textViewSize = textSize != 0 ? textSize : 14;
             float scale = (float) 4.5 / (textSize == 0 ? textViewSize : textSize);
 
             StringBuilder builder = new StringBuilder();
@@ -241,7 +231,7 @@ public class RichTextParser {
         return spanText;
     }
 
-    private CharSequence arrayParseSpannable(String text, JSONArray textJsonArray, int textSize, int verticalAlignment) {
+    private CharSequence arrayParseSpannable(String text, JSONArray textJsonArray, float textSize, int verticalAlignment) {
         SpannableStringBuilder resultString = new SpannableStringBuilder();
 
         int maxHeight = arrayMaxHeight(textJsonArray, textSize, verticalAlignment);
@@ -260,15 +250,15 @@ public class RichTextParser {
         return resultString;
     }
 
-    private int arrayMaxHeight(JSONArray textJsonArray, int textSize, int verticalAlignment) {
+    private int arrayMaxHeight(JSONArray textJsonArray, float textSize, int verticalAlignment) {
         int maxHeight = 0;
         //先找出最大的size
         if (verticalAlignment == VERTICAL_CENTER || verticalAlignment == VERTICAL_TOP) {
-            int maxSize = 0;
+            float maxSize = 0;
             JSONObject maxSpan = null;
             for (int i = 0; i < textJsonArray.length(); i++) {
                 JSONObject object = textJsonArray.optJSONObject(i);
-                int size = object.optInt(RichTextKey.TEXT_SIZE);
+                float size = (float) object.optDouble(RichTextKey.TEXT_SIZE, 0);
                 if (size == 0) {
                     size = textSize;
                 }
@@ -291,9 +281,9 @@ public class RichTextParser {
         TextPaint paint = new TextPaint();
         paint.setAntiAlias(true);
 
-        float textSize = object.optInt(RichTextKey.TEXT_SIZE);
+        float textSize = (float) object.optDouble(RichTextKey.TEXT_SIZE, 0);
         if (textSize != 0) {
-            paint.setTextSize(dip2px(textSize));
+            paint.setTextSize(textSize);
         }
 
         int textStyle = object.optInt(RichTextKey.TEXT_STYLE);

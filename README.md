@@ -44,6 +44,49 @@ textView.setTextColor(Color.BLACK);
 textView.setTextSize(12);
 textView.setText("123");
 ```
+## RichTextView
+This is extend TextView, and u can control its style from server-side.
+
+u can implement IRichTextHandler interface to decide how parse, such as asynchronous or synchronous.
+
+It supports the following attributes:
+- text: text - string
+- textColor: color value - hexadecimal
+- textSize: text size - float in sp
+- labelColor: view background color - hexadecimal
+- cornerRadius: view corner radius - float in dp
+- borderColor: view border color value - hexadecimal
+- borderWidth: view border width - float in dp
+- backgroundColor: text background color - hexadecimal
+- underline: whether text has underline - boolean
+- strikeThrough: whether text has strikeThrough - boolean
+- fontName: text font name - string
+- alignment: text gravity - 0:Gravity.START | Gravity.CENTER_VERTICAL 1:Gravity.CENTER 2:Gravity.END | Gravity.CENTER_VERTICAL
+- verticalAlignment: text gravity in vertical - 0:VERTICAL_BOTTOM 1:VERTICAL_CENTER 2:VERTICAL_TOP
+- textStyle: text type face - 0:Typeface.BOLD 1:Typeface.ITALIC 2:Typeface.BOLD_ITALIC
+- kerning: text kerning count - int
+
+Response json in example from server-side
+```
+{
+	"richTextList": [{
+			"text": "123",
+			"textColor": "#FF6633",
+			"textSize": "10",
+			"backgroundColor": "#FFFFFF"
+		},
+		{
+			"text": "456",
+			"textColor": "#000000",
+			"textSize": "10"
+		}
+	],
+	"labelColor": "#000000",
+	"cornerRadius": "2",
+	"borderColor": "#FFB6C1",
+	"borderWidth": "1"
+}
+```
 
 - - -
 **MIT License**
