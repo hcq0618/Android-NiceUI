@@ -1,4 +1,4 @@
-package com.github.someui;
+package com.github.niceui;
 
 import android.content.Context;
 import android.graphics.Color;
