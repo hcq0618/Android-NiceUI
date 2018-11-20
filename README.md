@@ -45,7 +45,7 @@ textView.setTextSize(12);
 textView.setText("123");
 ```
 ## RichTextView
-This is extend TextView, and u can control its style from server-side.
+This is a view extend TextView, and u can control its style from server-side.
 
 u can implement IRichTextHandler interface to decide how parse, such as asynchronous or synchronous.
 
