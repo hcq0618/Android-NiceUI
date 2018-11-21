@@ -103,7 +103,7 @@ public class RichTextParser {
         if (richObject instanceof JSONObject) {
             return parseSpannable((JSONObject) richObject, textSize, 0, verticalAlignment);
         } else if (richObject instanceof JSONArray) {
-            return arrayParseSpannable(json, (JSONArray) richObject, textSize, verticalAlignment);
+            return parseArraySpannable(json, (JSONArray) richObject, textSize, verticalAlignment);
         } else if (richObject instanceof String) {
             return (String) richObject;
         }
@@ -122,119 +122,48 @@ public class RichTextParser {
     }
 
     private CharSequence parseSpannable(JSONObject announceJson, float textSize, int maxHeight, int verticalAlignment) {
+
         String text = announceJson.optString(RichTextKey.TEXT);
-        SpannableStringBuilder spanText = new SpannableStringBuilder(!TextUtils.isEmpty(text) ? text : "");
+        SpannableStringBuilder spanText = setText(text);
 
-        //间距实现使用添加全角空格方式
         int letterSpace = announceJson.optInt(RichTextKey.KERNING);
-        if (letterSpace != 0) {
-            float textViewSize = textSize != 0 ? textSize : 14;
-            float scale = (float) 4.5 / (textSize == 0 ? textViewSize : textSize);
+        setKerning(letterSpace, textSize, text, spanText);
 
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < text.length(); i++) {
-                builder.append(text.charAt(i));
-                builder.append("\u00A0");
-            }
-            spanText = new SpannableStringBuilder(builder.toString());
-            if (builder.toString().length() > 1) {
-                for (int i = 1; i < builder.toString().length(); i += 2) {
-                    spanText.setSpan(new ScaleXSpan(scale * letterSpace), i, i + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                }
-            }
-        }
+        setMaxHeight(maxHeight, verticalAlignment, spanText);
 
-        if (textSize != 0) {
-            spanText.setSpan((new AbsoluteSizeSpan(dip2px(textSize))), 0, spanText.length(),
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-        if (maxHeight != 0) {
-            spanText.setSpan((new VerticalAlignmentSpan(maxHeight, verticalAlignment)), 0,
-                    spanText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-        String fontName = announceJson.optString(RichTextKey.FONT_NAME);
-        if (!TextUtils.isEmpty(fontName)) {
-            try {
-                Typeface typeface = Typeface.createFromAsset(context.getAssets(), "icon-font.ttf");
-                spanText.setSpan(new CustomTypefaceSpan("", typeface), 0,
-                        spanText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        setTextSize(textSize, spanText);
 
         String textColor = announceJson.optString(RichTextKey.TEXT_COLOR);
-        if (!TextUtils.isEmpty(textColor)) {
-            try {
-                spanText.setSpan(new ForegroundColorSpan(Color.parseColor(textColor)), 0,
-                        spanText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        setTextColor(textColor, spanText);
 
-        String backgroundColor = announceJson.optString(RichTextKey.BACKGROUND_COLOR);
-        if (!TextUtils.isEmpty(backgroundColor)) {
-            try {
-                spanText.setSpan(new BackgroundColorSpan(Color.parseColor(backgroundColor)), 0,
-                        spanText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        String textBackgroundColor = announceJson.optString(RichTextKey.BACKGROUND_COLOR);
+        setTextBackgroundColor(textBackgroundColor, spanText);
+
+        String fontName = announceJson.optString(RichTextKey.FONT_NAME);
+        setFont(fontName, spanText);
 
         if (announceJson.has(RichTextKey.TEXT_STYLE)) {
             int textStyle = announceJson.optInt(RichTextKey.TEXT_STYLE);
-            if (typefaceStyles.indexOfKey(textStyle) >= 0) {
-                int style = typefaceStyles.get(textStyle);
-                spanText.setSpan(new StyleSpan(style), 0, spanText.length(),
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
+            setTextStyle(textStyle, spanText);
         }
 
         if (announceJson.has(RichTextKey.STRIKE_THROUGH)) {
             boolean strikeThrough = announceJson.optBoolean(RichTextKey.STRIKE_THROUGH);
-            if (strikeThrough) {
-                spanText.setSpan(new StrikethroughSpan(), 0, spanText.length(),
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            } else {
-                CharacterStyle unableStrikeThroughSpan = new CharacterStyle() {
-                    @Override
-                    public void updateDrawState(TextPaint tp) {
-                        tp.setStrikeThruText(false);
-                    }
-                };
-                spanText.setSpan(unableStrikeThroughSpan, 0, spanText.length(),
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
+            setStrikeThrough(strikeThrough, spanText);
         }
 
         if (announceJson.has(RichTextKey.UNDERLINE)) {
             boolean underline = announceJson.optBoolean(RichTextKey.UNDERLINE);
-            if (underline) {
-                spanText.setSpan(new UnderlineSpan(), 0, spanText.length(),
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            } else {
-                CharacterStyle unableUnderlineSpan = new CharacterStyle() {
-                    @Override
-                    public void updateDrawState(TextPaint tp) {
-                        tp.setUnderlineText(false);
-                    }
-                };
-                spanText.setSpan(unableUnderlineSpan, 0, spanText.length(),
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
+            setUnderline(underline, spanText);
         }
 
         return spanText;
     }
 
-    private CharSequence arrayParseSpannable(String text, JSONArray textJsonArray, float textSize, int verticalAlignment) {
+    private CharSequence parseArraySpannable(String text, JSONArray textJsonArray, float textSize, int verticalAlignment) {
         SpannableStringBuilder resultString = new SpannableStringBuilder();
 
-        int maxHeight = arrayMaxHeight(textJsonArray, textSize, verticalAlignment);
+        int maxHeight = calMaxHeight(textJsonArray, textSize, verticalAlignment);
         for (int i = 0; i < textJsonArray.length(); i++) {
             if (textJsonArray.opt(i) instanceof JSONObject) {
                 JSONObject object = textJsonArray.optJSONObject(i);
@@ -250,7 +179,7 @@ public class RichTextParser {
         return resultString;
     }
 
-    private int arrayMaxHeight(JSONArray textJsonArray, float textSize, int verticalAlignment) {
+    private int calMaxHeight(JSONArray textJsonArray, float textSize, int verticalAlignment) {
         int maxHeight = 0;
         //先找出最大的size
         if (verticalAlignment == VERTICAL_CENTER || verticalAlignment == VERTICAL_TOP) {
@@ -270,8 +199,8 @@ public class RichTextParser {
 
             if (maxSpan != null) {
                 TextPaint maxPaint = getTextPaint(maxSpan);
-                int maxAcsent = Math.abs((int) maxPaint.ascent());
-                maxHeight = Math.max(maxAcsent, maxHeight);
+                int maxAscent = Math.abs((int) maxPaint.ascent());
+                maxHeight = Math.max(maxAscent, maxHeight);
             }
         }
         return maxHeight;
@@ -331,6 +260,119 @@ public class RichTextParser {
     private void setGravity(int alignment) {
         if (textAlignments.indexOfKey(alignment) >= 0) {
             richTextView.setGravity(textAlignments.get(alignment));
+        }
+    }
+
+    private void setKerning(int letterSpace, float textSize, String text, SpannableStringBuilder spanText) {
+        if (letterSpace != 0 && spanText != null) {
+            float textViewSize = textSize != 0 ? textSize : 14;
+            float scale = (float) 4.5 / (textSize == 0 ? textViewSize : textSize);
+
+            StringBuilder builder = new StringBuilder();
+            int textLength = text.length();
+            for (int i = 0; i < textLength; i++) {
+                builder.append(text.charAt(i));
+                //间距实现使用添加全角空格方式
+                builder.append("\u00A0");
+            }
+            spanText = new SpannableStringBuilder(builder.toString());
+            if (builder.toString().length() > 1) {
+                for (int i = 1; i < builder.toString().length(); i += 2) {
+                    spanText.setSpan(new ScaleXSpan(scale * letterSpace), i, i + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+            }
+        }
+    }
+
+    private void setTextSize(float textSize, SpannableStringBuilder spanText) {
+        if (textSize != 0) {
+            spanText.setSpan((new AbsoluteSizeSpan(dip2px(textSize))), 0, spanText.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    private SpannableStringBuilder setText(String text) {
+        return new SpannableStringBuilder(!TextUtils.isEmpty(text) ? text : "");
+    }
+
+    private void setTextColor(String textColor, SpannableStringBuilder spanText) {
+        if (!TextUtils.isEmpty(textColor)) {
+            try {
+                spanText.setSpan(new ForegroundColorSpan(Color.parseColor(textColor)), 0,
+                        spanText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void setTextBackgroundColor(String backgroundColor, SpannableStringBuilder spanText) {
+        if (!TextUtils.isEmpty(backgroundColor)) {
+            try {
+                spanText.setSpan(new BackgroundColorSpan(Color.parseColor(backgroundColor)), 0,
+                        spanText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void setTextStyle(int textStyle, SpannableStringBuilder spanText) {
+        if (typefaceStyles.indexOfKey(textStyle) >= 0) {
+            int style = typefaceStyles.get(textStyle);
+            spanText.setSpan(new StyleSpan(style), 0, spanText.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    private void setStrikeThrough(boolean strikeThrough, SpannableStringBuilder spanText) {
+        if (strikeThrough) {
+            spanText.setSpan(new StrikethroughSpan(), 0, spanText.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        } else {
+            CharacterStyle unableStrikeThroughSpan = new CharacterStyle() {
+                @Override
+                public void updateDrawState(TextPaint tp) {
+                    tp.setStrikeThruText(false);
+                }
+            };
+            spanText.setSpan(unableStrikeThroughSpan, 0, spanText.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    private void setUnderline(boolean underline, SpannableStringBuilder spanText) {
+        if (underline) {
+            spanText.setSpan(new UnderlineSpan(), 0, spanText.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        } else {
+            CharacterStyle unableUnderlineSpan = new CharacterStyle() {
+                @Override
+                public void updateDrawState(TextPaint tp) {
+                    tp.setUnderlineText(false);
+                }
+            };
+            spanText.setSpan(unableUnderlineSpan, 0, spanText.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    private void setMaxHeight(int maxHeight, int verticalAlignment, SpannableStringBuilder spanText) {
+        if (maxHeight != 0) {
+            spanText.setSpan((new VerticalAlignmentSpan(maxHeight, verticalAlignment)), 0,
+                    spanText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    private void setFont(String fontName, SpannableStringBuilder spanText) {
+        if (!TextUtils.isEmpty(fontName)) {
+            try {
+                Typeface typeface = Typeface.createFromAsset(context.getAssets(), fontName);
+                spanText.setSpan(new CustomTypefaceSpan("", typeface), 0,
+                        spanText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

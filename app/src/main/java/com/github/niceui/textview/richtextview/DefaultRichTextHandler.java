@@ -11,10 +11,6 @@ public class DefaultRichTextHandler implements IRichTextHandler {
 
     private ParseTask parseTask;
 
-    DefaultRichTextHandler() {
-        executor = Executors.newFixedThreadPool(1);
-    }
-
     @Override
     public boolean isAsync() {
         return true;
@@ -33,6 +29,9 @@ public class DefaultRichTextHandler implements IRichTextHandler {
         cancel();
 
         parseTask = new ParseTask(parser, this, callback);
+        if (executor == null) {
+            executor = Executors.newCachedThreadPool();
+        }
         parseTask.executeOnExecutor(executor, text);
     }
 
@@ -45,8 +44,6 @@ public class DefaultRichTextHandler implements IRichTextHandler {
     @Override
     public void onDestroy() {
         cancel();
-
-        executor.shutdownNow();
     }
 
     private static class ParseTask extends AsyncTask<CharSequence, CharSequence, CharSequence> {
